@@ -15,7 +15,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
 from flask import Flask, jsonify, request
 from scraping.models.modelos import Usuario, Livros
-from flask import request, jsonify
 import numpy as np
 import os
 import subprocess
@@ -24,6 +23,8 @@ from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
     jwt_required, get_jwt_identity
 )
+from flask_jwt_extended import jwt_required
+import json
 print("api.py foi importado!")
 
 
@@ -167,6 +168,9 @@ def retornaLivros():
     """
     Retorna a lista de títulos dos livros.
     ---
+    tags:
+      - Endpoints Obrigatórios da API - Endpoints Core
+    summary: Realiza a busca de todos os livros.
     responses:
       200:
         description: Lista de títulos dos livros
@@ -187,6 +191,9 @@ def get_book_by_index(book_idx):
     """
     Retorna detalhes completos de um livro específico pelo índice.
     ---
+    tags:
+      - Endpoints Obrigatórios da API - Endpoints Core
+    summary: Realiza a busca do livro pelo id.
     parameters:
       - name: book_idx
         in: path
@@ -213,6 +220,9 @@ def search_books():
     """
     Busca livros por título e/ou categoria.
     ---
+    tags:
+      - Endpoints Obrigatórios da API - Endpoints Core
+    summary: Realiza a busca do livro por titulo ou categoria.
     parameters:
       - name: title
         in: query
@@ -253,6 +263,9 @@ def get_categories():
     """
     Lista todas as categorias de livros disponíveis.
     ---
+    tags:
+      - Endpoints Obrigatórios da API - Endpoints Core
+    summary: Lista todas as categorias dos livros.
     responses:
       200:
         description: Lista de categorias
@@ -275,7 +288,7 @@ def health_check():
 
     ---
     tags:
-      - Health Check
+      - Endpoints Obrigatórios da API - Endpoints Core
     summary: Verifica a saúde do serviço e a disponibilidade dos dados.
     responses:
       200:
@@ -325,8 +338,8 @@ def stats_overview():
     Estatísticas gerais da coleção de livros
     ---
     tags:
-      - Estatísticas
-    summary: Retorna estatísticas gerais da coleção de livros.
+      - Endpoints Opcionais da API - Endpoints de Insights
+    summary: Mostra a estatistica dos livros.
     responses:
       200:
         description: Estatísticas gerais da coleção de livros.
@@ -374,12 +387,12 @@ def stats_overview():
     try:
         df = pd.read_csv(csv_path)
         preco_com_taxa = pd.to_numeric(
-            df['preco_com_taxa'].replace(
+            df['preco_com_taxa'].astype(str).replace(
                 '[^0-9.,]', '', regex=True).str.replace(',', '.'),
             errors='coerce'
         )
         preco_sem_taxa = pd.to_numeric(
-            df['preco_sem_taxa'].replace(
+            df['preco_sem_taxa'].astype(str).replace(
                 '[^0-9.,]', '', regex=True).str.replace(',', '.'),
             errors='coerce'
         )
@@ -408,7 +421,7 @@ def stats_categories():
     Estatísticas detalhadas por categoria
     ---
     tags:
-      - Estatísticas
+      - Endpoints Opcionais da API - Endpoints de Insights
     summary: Retorna estatísticas detalhadas por categoria (quantidade de livros, preços por categoria).
     responses:
       200:
@@ -444,12 +457,12 @@ def stats_categories():
     try:
         # Garante que os preços são float
         df_books['preco_com_taxa'] = pd.to_numeric(
-            df_books['preco_com_taxa'].replace(
+            df_books['preco_com_taxa'].astype(str).replace(
                 '[^0-9.,]', '', regex=True).str.replace(',', '.'),
             errors='coerce'
         )
         df_books['preco_sem_taxa'] = pd.to_numeric(
-            df_books['preco_sem_taxa'].replace(
+            df_books['preco_sem_taxa'].astype(str).replace(
                 '[^0-9.,]', '', regex=True).str.replace(',', '.'),
             errors='coerce'
         )
@@ -483,7 +496,7 @@ def top_rated_books():
     Lista os livros com melhor avaliação (rating mais alto).
     ---
     tags:
-      - Livros
+      - Endpoints Opcionais da API - Endpoints de Insights
     summary: Retorna todos os livros com o maior rating encontrado no catálogo.
     responses:
       200:
@@ -541,12 +554,12 @@ def top_rated_books():
 
         # Converte preços para float, tratando valores inválidos
         df['preco_com_taxa'] = pd.to_numeric(
-            df['preco_com_taxa'].replace(
+            df['preco_com_taxa'].astype(str).replace(
                 '[^0-9.,]', '', regex=True).str.replace(',', '.'),
             errors='coerce'
         )
         df['preco_sem_taxa'] = pd.to_numeric(
-            df['preco_sem_taxa'].replace(
+            df['preco_sem_taxa'].astype(str).replace(
                 '[^0-9.,]', '', regex=True).str.replace(',', '.'),
             errors='coerce'
         )
@@ -573,7 +586,8 @@ def get_books_by_price_range():
     Filtra livros dentro de uma faixa de preço específica.
     ---
     tags:
-      - Livros
+      - Endpoints Opcionais da API - Endpoints de Insights
+    summary: Mostra o range de preço dos livros.
     parameters:
       - name: min
         in: query
@@ -639,7 +653,7 @@ def get_books_by_price_range():
         # Normaliza o campo de preço
         df = df_books.copy()
         df['preco_com_taxa'] = pd.to_numeric(
-            df['preco_com_taxa'].replace(
+            df['preco_com_taxa'].astype(str).replace(
                 '[^0-9.,]', '', regex=True).str.replace(',', '.'),
             errors='coerce'
         )
@@ -661,71 +675,10 @@ def get_books_by_price_range():
         return jsonify({"error": "Erro ao processar a requisição: " + str(e)}), 500
 
 
-@app.route('/api/v1/scraping/trigger', methods=['POST'])
-@jwt_required()
-def trigger_scraping():
-    """
-    Dispara manualmente a rotina de scraping em rbackground e retorna o status da execução.
-
-    ---
-    tags:
-      - Scraping
-    summary: Executa o scraping dos dados manualmente.
-    responses:
-      200:
-        description: Scraping executado com sucesso
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: success
-            message:
-              type: string
-              example: Scraping concluído com sucesso.
-      500:
-        description: Erro ao executar o scraping
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: error
-            message:
-              type: string
-              example: Falha ao executar o scraping.
-            error:
-              type: string
-              example: Mensagem de erro detalhada
-    """
-    try:
-        # Dispara o scraping em uma thread separada
-        threading.Thread(target=run_scraper).start()
-        return jsonify({
-            "status": "processing",
-            "message": "Scraping iniciado em background. Consulte o status depois."
-        }), 202
-    except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": "Erro inesperado ao iniciar o scraping.",
-            "error": str(e)
-        }), 500
-
-
-@app.route('/api/v1/scraping/status', methods=['GET'])
-def scraping_status():
-    try:
-        if os.path.exists('scraping_status.txt'):
-            with open('scraping_status.txt') as f:
-                status = f.read().strip()
-                df = pd.read_csv(csv_path)
-                importar_livros_do_csv(df)
-        else:
-            status = 'Não terminou'
-        return jsonify({"status": status})
-    except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+# -------------------------------------------------------
+# Desafios Adicionais (Bônus)
+# -------------------------------------------------------
+# Implementar JWT Authentication para proteger rotas sensíveis
 
 
 @app.route('/api/v1/auth/login', methods=['POST'])
@@ -734,7 +687,7 @@ def login_user():
     Faz login do usuário e retorna o JWT.
     ---
     tags:
-      - Autenticação
+      - Desafio Adicional (Bônus) - Autenticação
     summary: Realiza login e retorna um token JWT.
     requestBody:
       required: true
@@ -784,6 +737,65 @@ def login_user():
     return jsonify({"error": "Invalid credentials"}), 401
 
 
+@app.route('/api/v1/auth/newuser', methods=['POST'])
+@jwt_required()  # Protege o endpoint, só acessa com JWT válido
+def register_user():
+    """
+    Cria um novo usuário (protegido por JWT).
+    ---
+    tags:
+      - Desafio Adicional (Bônus) - Autenticação
+    summary: Cria um novo usuário (apenas autenticado)
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+                example: novo_user
+              password:
+                type: string
+                example: senha_segura
+    responses:
+      201:
+        description: Usuário criado com sucesso.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Usuário criado com sucesso!
+      400:
+        description: Dados inválidos ou usuário já existe.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Usuário já existe.
+    """
+    data = request.get_json()
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({"error": "Username e password são obrigatórios."}), 400
+
+    if Usuario.query.filter_by(username=data['username']).first():
+        return jsonify({"error": "Usuário já existe."}), 400
+
+    hashed_password = generate_password_hash(data['password'])
+    novo_usuario = Usuario(username=data['username'], password=hashed_password)
+    db.session.add(novo_usuario)
+    db.session.commit()
+
+    return jsonify({"message": "Usuário criado com sucesso!"}), 201
+
+
 @app.route('/api/v1/auth/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh_token():
@@ -791,7 +803,7 @@ def refresh_token():
     Renova o token de acesso usando um refresh token válido.
     ---
     tags:
-      - Autenticação
+      - Desafio Adicional (Bônus) - Autenticação
     summary: Renova o token de acesso (JWT).
     security:
       - bearerAuth: []
@@ -822,13 +834,118 @@ def refresh_token():
     return jsonify(access_token=new_token), 200
 
 
+@app.route('/api/v1/scraping/trigger', methods=['POST'])
+@jwt_required()
+def trigger_scraping():
+    """
+    Dispara manualmente a rotina de scraping em rbackground e retorna o status da execução.
+
+    ---
+    tags:
+      - Scraping
+    summary: Dispara manualmente a rotina de scraping em rbackground.
+    responses:
+      200:
+        description: Scraping executado com sucesso
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Scraping concluído com sucesso.
+      500:
+        description: Erro ao executar o scraping
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: Falha ao executar o scraping.
+            error:
+              type: string
+              example: Mensagem de erro detalhada
+    """
+    try:
+        # Dispara o scraping em uma thread separada
+        threading.Thread(target=run_scraper).start()
+        return jsonify({
+            "status": "processing",
+            "message": "Scraping iniciado em background. Consulte o status depois."
+        }), 202
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": "Erro inesperado ao iniciar o scraping.",
+            "error": str(e)
+        }), 500
+
+
+@app.route('/api/v1/scraping/status', methods=['GET'])
+def scraping_status():
+    """
+    Consulta o status da execução do Scraping em Background.
+    ---
+    tags:
+      - Scraping
+    summary: EConsulta o status da execução do Scraping em Background.
+    responses:
+      200:
+        description: Scraping executado com sucesso
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Scraping concluído com sucesso.
+      500:
+        description: Erro ao executar o scraping
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: Falha ao executar o scraping.
+            error:
+              type: string
+              example: Mensagem de erro detalhada
+    """
+    try:
+        if os.path.exists('scraping_status.txt'):
+            with open('scraping_status.txt') as f:
+                status = f.read().strip()
+                df = pd.read_csv(csv_path)
+                importar_livros_do_csv(df)
+        else:
+            status = 'Não terminou'
+        return jsonify({"status": status})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+# -------------------------------------------------------
+# Desafio 2: Pipeline ML-Ready
+# -------------------------------------------------------
+# Criar endpoints pensados para consumo de modelos ML:
+
+
 @app.route('/api/v1/ml/features', methods=['GET'])
 def ml_features():
     """
     Retorna os dados dos livros formatados para uso como features em modelos de ML.
     ---
     tags:
-      - Machine Learning
+      - Desafio 2: Pipeline Machine Learning-Ready
     summary: Retorna features para ML
     responses:
       200:
@@ -868,7 +985,7 @@ def ml_training_data():
     Retorna o dataset completo para treinamento de modelos de ML.
     ---
     tags:
-      - Machine Learning
+      - Desafio 2: Pipeline Machine Learning-Ready
     summary: Retorna dados prontos para treinamento de ML
     responses:
       200:
@@ -914,7 +1031,7 @@ def ml_predictions():
     Recebe features e retorna predições do modelo de ML.
     ---
     tags:
-      - Machine Learning
+      - Desafio 2: Pipeline Machine Learning-Ready
     summary: Realiza predições com o modelo de ML
     requestBody:
       required: true
@@ -975,6 +1092,45 @@ def ml_predictions():
 
     except Exception as e:
         return jsonify({"error": f"Erro ao realizar predição: {str(e)}"}), 500
+
+# -------------------------------------------------------
+# Logs
+# -------------------------------------------------------
+# Logs do Arquivo Json:
+
+
+@app.route('/api/v1/logs', methods=['GET'])
+def get_logs_execucao():
+    """
+    Retorna o conteúdo do arquivo logsExecucao.json.
+    ---
+    tags:
+      - Logs
+    summary: Exibe o conteúdo do logsExecucao.json
+    responses:
+      200:
+        description: Conteúdo do arquivo retornado com sucesso.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+      404:
+        description: Arquivo não encontrado.
+      500:
+        description: Erro ao ler o arquivo.
+    """
+    file_path = os.path.join(os.path.dirname(__file__), 'logsExecucao.json')
+    if not os.path.exists(file_path):
+        return jsonify({"error": "Arquivo logsExecucao.json não encontrado."}), 404
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # Lê cada linha como um JSON separado
+            data = [json.loads(line) for line in f if line.strip()]
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": f"Erro ao ler o arquivo: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
