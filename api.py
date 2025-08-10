@@ -85,9 +85,6 @@ def inicializar_app():
         treinar()
 
 
-inicializar_app()
-
-
 def inserir_usuario_admin():
     usuario = Usuario(username='admin', password='1234')
     db.session.add(usuario)
@@ -980,12 +977,6 @@ def ml_predictions():
         return jsonify({"error": f"Erro ao realizar predição: {str(e)}"}), 500
 
 
-# if __name__ == '__main__':
-#    with app.app_context():
-#        db.create_all()  # Agora a tabela será criada corretamente
-#        if Livros.query.count() == 0:
-#            importar_livros_do_csv(df_books)
-#        if not Usuario.query.filter_by(username='admin').first():
-#            inserir_usuario_admin()
-#        treinar()
-#    app.run()
+if __name__ == '__main__':
+    inicializar_app()
+app.run()
