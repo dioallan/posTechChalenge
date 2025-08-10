@@ -28,7 +28,7 @@ print("api.py foi importado!")
 
 
 app = Flask(__name__)
-
+print("app foi criado!", app)
 metrics = PrometheusMetrics(app)
 app.config.from_object('config')
 jwt = JWTManager(app)
