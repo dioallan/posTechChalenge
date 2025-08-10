@@ -28,6 +28,20 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 
 app = Flask(__name__)
+
+
+def inicializar_app():
+    with app.app_context():
+        db.create_all()
+        if Livros.query.count() == 0:
+            importar_livros_do_csv(df_books)
+        if not Usuario.query.filter_by(username='admin').first():
+            inserir_usuario_admin()
+        treinar()
+
+
+inicializar_app()
+
 metrics = PrometheusMetrics(app)
 app.config.from_object('config')
 
@@ -968,12 +982,12 @@ def ml_predictions():
         return jsonify({"error": f"Erro ao realizar predição: {str(e)}"}), 500
 
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()  # Agora a tabela será criada corretamente
-        if Livros.query.count() == 0:
-            importar_livros_do_csv(df_books)
-        if not Usuario.query.filter_by(username='admin').first():
-            inserir_usuario_admin()
-        treinar()
-    app.run()
+# if __name__ == '__main__':
+#    with app.app_context():
+#        db.create_all()  # Agora a tabela será criada corretamente
+#        if Livros.query.count() == 0:
+#            importar_livros_do_csv(df_books)
+#        if not Usuario.query.filter_by(username='admin').first():
+#            inserir_usuario_admin()
+#        treinar()
+#    app.run()
