@@ -24,3 +24,4 @@ scikit-learn==1.6.1
 Scrapy==2.13.3
 SQLAlchemy==2.0.42
 streamlit==1.48.0
+gunicorn
