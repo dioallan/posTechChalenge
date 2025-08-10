@@ -1,30 +1,30 @@
+from prometheus_flask_exporter import PrometheusMetrics
+from api.logging_middleware import register_logging_hooks
+from api.logging_config import setup_logger
+from pythonjsonlogger import jsonlogger
+import logging
+from scraping.models.modeloMachineLearning import MLModel
+from api.treinar_modelo import treinar
+import threading
+import pandas as pd
+import csv
+from bs4 import BeautifulSoup
+from scraping.models.database import db
+from flasgger import Swagger
+from flask_sqlalchemy import SQLAlchemy
+from flask_httpauth import HTTPBasicAuth
+from flask import Flask, jsonify, request
+from scraping.models.modelos import Usuario, Livros
+from flask import request, jsonify
+import numpy as np
+import os
+import subprocess
+import joblib
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
     jwt_required, get_jwt_identity
 )
-import joblib
-import subprocess
-import os
-import numpy as np
-from flask import request, jsonify
-from scraping.models.modelos import Usuario, Livros
-from flask import Flask, jsonify, request
-from flask_httpauth import HTTPBasicAuth
-from flask_sqlalchemy import SQLAlchemy
-from flasgger import Swagger
-from scraping.models.database import db
-from bs4 import BeautifulSoup
-import csv
-import pandas as pd
-import threading
-from api.treinar_modelo import treinar
-from scraping.models.modeloMachineLearning import MLModel
-from api.treinar_modelo import treinar
-import logging
-from pythonjsonlogger import jsonlogger
-from api.logging_config import setup_logger
-from api.logging_middleware import register_logging_hooks
-from prometheus_flask_exporter import PrometheusMetrics
+print("api.py foi importado!")
 
 
 app = Flask(__name__)
@@ -979,4 +979,4 @@ def ml_predictions():
 
 if __name__ == '__main__':
     inicializar_app()
-app.run()
+    app.run()
