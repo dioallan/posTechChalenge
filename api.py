@@ -29,23 +29,8 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
 
-
-def inicializar_app():
-    with app.app_context():
-        db.create_all()
-        if Livros.query.count() == 0:
-            importar_livros_do_csv(df_books)
-        if not Usuario.query.filter_by(username='admin').first():
-            inserir_usuario_admin()
-        treinar()
-
-
-inicializar_app()
-
 metrics = PrometheusMetrics(app)
 app.config.from_object('config')
-
-
 jwt = JWTManager(app)
 swagger = Swagger(app)
 db.init_app(app)
