@@ -1,10 +1,10 @@
 from prometheus_flask_exporter import PrometheusMetrics
-from api.logging_middleware import register_logging_hooks
-from api.logging_config import setup_logger
+from apis.logging_middleware import register_logging_hooks
+from apis.logging_config import setup_logger
 from pythonjsonlogger import jsonlogger
 import logging
 from scraping.models.modeloMachineLearning import MLModel
-from api.treinar_modelo import treinar
+from apis.treinar_modelo import treinar
 import threading
 import pandas as pd
 import csv
