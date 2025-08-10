@@ -75,6 +75,19 @@ ml.treinar(df, features, target)  # Treina e salva o modelo
 modelTreinado = ml.carregar()  # Carrega o modelo treinado
 
 
+def inicializar_app():
+    with app.app_context():
+        db.create_all()
+        if Livros.query.count() == 0:
+            importar_livros_do_csv(df_books)
+        if not Usuario.query.filter_by(username='admin').first():
+            inserir_usuario_admin()
+        treinar()
+
+
+inicializar_app()
+
+
 def inserir_usuario_admin():
     usuario = Usuario(username='admin', password='1234')
     db.session.add(usuario)
