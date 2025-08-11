@@ -46,26 +46,36 @@ def home():
     return "hello, Flask testado!"
 
 
-try:
-    df_books = pd.read_csv('scraping/csv/resultado.csv')
-except Exception as e:
-    # DataFrame genérico caso o arquivo não exista ou dê erro
-    df_books = pd.DataFrame({
-        'titulo': [],
-        'preco_com_taxa': [],
-        'preco_sem_taxa': [],
-        'rating': [],
-        'disponibilidade': [],
-        'categoria': [],
-        'url_imagem': []
-    })
+MODEL_PATH = 'meu_modelo.pkl'
+csv_path = 'scraping/csv/resultado.csv'
+
+
+colunas = ['titulo', 'preco_com_taxa', 'preco_sem_taxa',
+           'rating', 'disponibilidade', 'categoria', 'url_imagem']
+
+valores_genericos = {
+    'titulo': ['Exemplo'],
+    'preco_com_taxa': [0.0],
+    'preco_sem_taxa': [0.0],
+    'rating': [0],
+    'disponibilidade': [0],
+    'categoria': ['Genérica'],
+    'url_imagem': ['https://exemplo.com/imagem.jpg']
+}
+
+if not os.path.exists(csv_path):
+    df_generico = pd.DataFrame(valores_genericos)
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    df_generico .to_csv(csv_path, index=False)
+    print(f"Arquivo {csv_path} criado com valor genérico.")
+
+df_books = pd.read_csv(csv_path)
+
 print(os.path.exists('scraping/csv/resultado.csv'))
 print(df_books.head())
 print(df_books.columns)
 print(len(df_books))
 
-MODEL_PATH = 'meu_modelo.pkl'
-csv_path = 'scraping/csv/resultado.csv'
 
 features = ['preco_com_taxa', 'preco_sem_taxa', 'disponibilidade']
 target = 'rating'
@@ -133,6 +143,10 @@ def run_scraper():
         # Garante que o diretório existe
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
         project_root = os.path.dirname(os.path.abspath(__file__))
+
+        # Remove o CSV existente, se houver
+        if os.path.exists(csv_path):
+            os.remove(csv_path)
 
         # Executa o comando Scrapy via terminal
         result = subprocess.run(
