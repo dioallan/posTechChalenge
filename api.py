@@ -25,6 +25,8 @@ from flask_jwt_extended import (
 )
 from flask_jwt_extended import jwt_required
 import json
+
+
 print("api.py foi importado!")
 
 
@@ -788,11 +790,10 @@ def register_user():
     if Usuario.query.filter_by(username=data['username']).first():
         return jsonify({"error": "Usuário já existe."}), 400
 
-    hashed_password = generate_password_hash(data['password'])
-    novo_usuario = Usuario(username=data['username'], password=hashed_password)
+    novo_usuario = Usuario(
+        username=data['username'], password=data['password'])
     db.session.add(novo_usuario)
     db.session.commit()
-
     return jsonify({"message": "Usuário criado com sucesso!"}), 201
 
 
