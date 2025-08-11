@@ -121,6 +121,9 @@ GET /api/v1/logs — Retorna logs estruturados (NDJSON).
 
 ## Autenticação JWT
 
+
+![Desenho Usuário](images/rota_usuario.jpg)
+
 POST /api/v1/auth/login — Login e obtenção de token JWT.
 POST /api/v1/auth/newuser — Criação de novo usuário (JWT).
 POST /api/v1/auth/refresh — Renovação do token de acesso.
