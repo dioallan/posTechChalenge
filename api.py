@@ -144,7 +144,7 @@ def run_scraper():
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
         project_root = os.path.dirname(os.path.abspath(__file__))
 
-        # Remove o CSV existente, se houver
+        # Remove o CSV existente, se houvder
         if os.path.exists(csv_path):
             os.remove(csv_path)
 
