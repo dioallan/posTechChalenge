@@ -5,7 +5,7 @@ import json
 st.title("Dashboard de Logs da API Flask")
 
 # Caminho do arquivo de log
-LOG_FILE = "logs.json"
+LOG_FILE = "logsExecucao.json"
 
 # Lê os logs
 with open(LOG_FILE) as f:
