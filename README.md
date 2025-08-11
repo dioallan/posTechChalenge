@@ -551,6 +551,13 @@ Exemplo de Retorno:
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## Execucao Scraping
 
+Desenho Macro do fluxo de chamada via Scraping, rota protegida JWT, onde o usuário faz a solicitação, após a autenticação é feita a coleta de dados do site, gravados em um arquivo .csv
+e usado por meio de Dataframe pela Api, automaticamente ao fazer o scraping, é feita uma cópia (Backup) em um banco de dados, garantindo assim, uma possível reutilização, em caso de perda
+de dados, ou site de origem fora do ar.
+
+![Desenho Usuário](images/rest-chamada.jpg)
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 POST /api/v1/scraping/trigger — Dispara scraping (JWT).
 
 Exemplo de Retorno:
