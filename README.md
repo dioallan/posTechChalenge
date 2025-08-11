@@ -8,14 +8,28 @@ API RESTful para gerenciamento, consulta e análise de livros, com scraping, aut
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Funcionalidades](#funcionalidades)
-- [Instalação](#instalacao)
-- [Configuração](#configuracao)
-- [Endpoints Principais](#endpoints-principais)
-    - [Endpoints Obrigatórios](#endpoints-obrigatorio)       
-    - [Endpoints Adicionais](#endpoints-adicional)
-- [Autenticação JWT](#autenticacao-jwt)
-- [Scraping](#scraping)
+- [Instalacaoo](#instalacao)
+- [Configuracao](#configuracao)
+- [Autenticacao e criacao de Usuarios](#autenticacao-e-criacao-de-usuarios)
+- [Sistema de Autenticacao JWT](#autenticacao-e-criacao-de-usuarios)
+    - [JWT Geracao de Token](#jwt-geracao-de-token)
+    - [JWT Refresh Token](#jwt-refresh-token)
+    - [JWT Criacao de Usuario](#jwt-criacao-de-usuario)
+- [Endpoints Obrigatorios Core](#sistema-de-autenticacao-jwt)
+    - [Livros Lista](#livros-lista)
+    - [Livros Indice](#livros-indice)
+    - [Livros Busca Titulo e Categoria](#livros-busca-titulo-e-categoria)
+    - [Livros Lista Categorias](#livros-lista-categorias)
+- [Endpoints Adicionais Insights](#endpoints-adicionais-insights)
+    - [Livros Faixa de Preco](#livros-faixa-de-preco)
+    - [Livros Lista Maior Rating](#livros-lista-maior-rating)
+    - [Livros Estatisticas Gerais](#livros-estatisticas-gerais)
+    - [Livros Estatisticas Categoria](#livros-estatisticas-categoria)
 - [Machine Learning](#machine-learning)
+    - [ML Predicoes](#ml-predicoes)
+    - [ML Features](#ml-features)
+    - [ML Treinamento Dados](#ml-treinamento-dados)
+- [Scraping](#scraping)
 - [Logs](#logs)
 - [Monitoramento](#monitoramento)
 
@@ -45,7 +59,7 @@ Swagger UI para documentação interativa.
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## Instalação
+## Instalacao
 
 1. - Clone o repositório:
 
@@ -77,7 +91,7 @@ pip install -r requirements.txt
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## Configuração
+## Configuracao
 
 1. - Ao Inicializar a aplicação é criado um Banco De Dados, para servir como backup do Dataframe, com origem do arquivo .csv gerado através do processo de Scraping.
   
@@ -113,17 +127,50 @@ http://localhost:5000/apidocs
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## Endpoints Principais e Exemplos de chamadas com retorno:
+## Autenticacao e criacao de Usuarios:
+
+Por padrão é criado o usuário admin e senha 1234, para testes de autenticação via JWT, tendo as rotas 'login' - Geração de Token, refresh para renovação de token
+e 'newuser', para criação de novo usuário.
+Nessa Api, a autenticação via JWT é obrigatória somente nas requisições para criação de novos usuários 'newuser' e 'trigger', para executar o scrapping e fazer
+a carga no Dataframe e Database.
+
+Para mais detalhes e exemplos de rotas JWT: [Autenticaçao JWT](#autenticacao-jwt)
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## Autenticação JWT
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## Scraping
+
+O Scraping é disparado através da rota api/v1/scraping/trigger, esse por sua vez exige autenticação, e é feita a coleta do site https://books.toscrape.com/, o resultado é formatado e salvo em 
+um CSV: com os campos Título, Categoria, Raiting, Disponibilidade, Preço com taxa e Preço sem taxa, na execução da API, são extraidos os dados para um DataFrame Pandas, e feito uma cópia (BKP)
+em uma Tabela do Banco de Dados TechChalenge.db
+
+Detalhes e exemplos da Execução via Scraping: 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## Sistema de Autenticacao JWT
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Fluxo de validações de Credenciais, algumas rotas sensíveis da api são prottegidas pelo método de autenticação JWT, o desenho ilustra uma chamada rest, e o fluxo que acessa as credenciais para
+validação, exemplos onde serão utilizadas, no processo de carga do scraping, e criação de novos usuários.
 
 ![Desenho Usuário](images/rota_usuario.jpg)
 
+### JWT Geracao de Token
+
 POST /api/v1/auth/login — Login e obtenção de token JWT.
 
-Exemplo de Entrada:
+Demonstração do endereço de chamda via postman, onde é utilizado o método POST, e passando os atributos de entrada.
+
+![Desenho Usuário](images/jwt-login.jpg)
+
+Exemplo de Entrada Texto:
 ```json
 {
     "username": "admin",
@@ -140,9 +187,18 @@ Exemplo de Retorno:
 }
 ```
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### JWT Refresh Token
+
 POST /api/v1/auth/refresh — Renovação do token de acesso.
 
-Exemplo de Entrada:
+Demonstração do método post de refresh do token, onde no postman, o preenchimento dos atributos de entradas para requisição é no Headers > Key (Selecionar 'Authorization'), 
+Value, preencher com Bearer, um espaço e colar o 'refresh_token', gerado na requisição anterior de login.
+
+![Desenho Usuário](images/jwt-login.jpg)
+
+Exemplo de Entrada Texto:
 
 ```json
 Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1NDgwMzI2OSwianRpIjoiMGZkMGY5YTQtOWZjYS00YmM5LWJjODgtMDRmNzQ5MWZjYjAyIiwidHlwZSI6InJlZnJlc2giLCJzdWIiOiIxIiwibmJmIjoxNzU0ODAzMjY5LCJjc3JmIjoiZjA5NDNlZDUtOGY2OS00OTI4LWJjNmItYTNmYTE4MDU4OWE2IiwiZXhwIjoxNzU3Mzk1MjY5fQ.TFnji2dem9OIveGRVGODCxGL0dnD8iYySwkof7Te8kQ
@@ -154,10 +210,19 @@ Exemplo de Retorno:
 }
 ```
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### JWT Criacao de Usuario
+
 
 POST /api/v1/auth/newuser — Criação de novo usuário (JWT).
 
-Exemplo de Entrada:
+Exemplo de cadastro de novo usuário, com o exemplo da entrada, e nesse caso é obrigatório fazer a autenticação JWT, no postman, o caminho é Authorization > Bearer Token > e colar o 
+'access_token', gerado na etapa de login.
+
+![Desenho Usuário](images/jwt-usernew.jpg)
+
+Exemplo de Entrada Texto:
 
 ```json
 {
@@ -173,12 +238,22 @@ Exemplo de Retorno:
 ```
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-### Endpoints Obrigatórios:
+## Endpoints Obrigatorios Core:
 
+Desenho Macro do fluxo de chamdas Rest da api, todas as chamadas seguem basicamente esse fluxo, é feita o POST ou GET, 
+a api consulta o DataFrame e devolve a requisição para o usuário
 
-#### Livros:
+![Desenho Usuário](images/rota_usuario.jpg)
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### Livros Lista:
 
 GET /api/v1/books — Lista todos os livros.
+
+Exemplo de solicitação no postman, para chamada do metodo Get, onde é listado todos os registros do Dataframe.
+
+![Desenho Usuário](images/livros-features.jpg)
 
 
 Exemplo do Retorno:
@@ -202,13 +277,20 @@ Exemplo do Retorno:
         "titulo": "It's Only the Himalayas"
     },
 ```
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### Livros Indice:
 
 GET /api/v1/books/<int:book_idx> — Detalhes de um livro pelo índice.
+
+Exemplo de chamada via postman, onde o método Get faz a busca na lista pelo indice 888.
+
+![Desenho Usuário](images/livros-indice.jpg)
 
 
 Exemplo de Retorno:
 
-Ao ser inserido o indice 88, foi retornado o livro correspondente:
+Ao ser inserido o indice 888, foi retornado o livro correspondente:
 ```json
 {
     "categoria": "Fiction",
@@ -220,8 +302,16 @@ Ao ser inserido o indice 88, foi retornado o livro correspondente:
     "url_imagem": "https://books.toscrape.com/media/cache/a3/ad/a3ade5edecde67449329c1ebb016c049.jpg"
 }
 ```
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-GET /api/v1/books/search?titulo=(titulo)&categoria=(categoria) — Busca por título/categoria..
+### Livros Busca Titulo e Categoria:
+
+GET /api/v1/books/search?titulo=(titulo)&categoria=(categoria) — Busca por título/categoria.
+
+Exemplo de chamada via postman, onde o método Get faz a busca na lista pelo título e categoria, que no caso foram 
+'Behind Closed Doors Thriller' e 'Thriller'.
+
+![Desenho Usuário](images/livros-titulo.jpg)
 
 Exemplo de Retorno:
 
@@ -242,7 +332,15 @@ Behind Closed Doors Thriller
 ]
 ```
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### Livros Lista Categorias:
+
 GET /api/v1/categories — Lista todas as categorias.
+
+Exemplo de chamada via postman, onde o método Get faz a busca de todas as categorias presentes no DataFrame:
+
+![Desenho Usuário](images/livros-categorias.jpg)
 
 Exemplo de Retorno:
 Retorna todas as categorias de Livros
@@ -303,11 +401,21 @@ Retorna todas as categorias de Livros
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-### Endpoints Adicionais:
+## Endpoints Adicionais Insights:
 
-#### Livros Faixa de Preço:
+O Mesmo desenho Macro do fluxo de chamadas Rest da api, segue o mesmo padrão onde é feita o POST ou GET, 
+a api consulta o DataFrame e devolve a requisição para o usuário
+
+![Desenho Usuário](images/rota_usuario.jpg)
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### Livros Faixa de Preco:
+
 GET /api/v1/books/price-range?min=10&max=50 — Filtra livros por faixa de preço.
 
+Chamada via postman, onde o método Get faz a busca do range de preços minimo 10 e máximo 50
+
+![Desenho Usuário](images/estatistica-range.jpg)
 
 Exemplo de retorno:
 
@@ -330,7 +438,15 @@ Exemplo de retorno:
     },
 ]
 ```
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### Livros Lista Maior Rating
+
 GET /api/v1/books/top-rated — Lista livros com maior rating.
+
+Chamada via postman, onde o método Get faz retorna os livros classificados maior Rating
+
+![Desenho Usuário](images/estatistica-toprated.jpg)
 
 Exemplo de Retorno:
 ```json
@@ -372,7 +488,15 @@ Exemplo de Retorno:
     },
 ```
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### Livros Estatisticas Gerais:
+
 GET /api/v1/stats/overview — Estatísticas gerais.
+
+Chamada via postman, onde o método Get faz retorna Estatisticas Gerais da lista.
+
+![Desenho Usuário](images/estatistica-gerais.jpg)
 
 
 Exemplo de Retorno:
@@ -391,7 +515,15 @@ Exemplo de Retorno:
 }
 ```
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+### Livros Estatisticas Categoria:
+
 GET /api/v1/stats/categories — Estatísticas por categoria.
+
+Chamada via postman, onde o método Get faz retorna Estatisticas por categoria do livro presente na lista.
+
+![Desenho Usuário](images/estatistica-categoria.jpg)
 
 Exemplo de Retorno:
 ```json
@@ -417,7 +549,7 @@ Exemplo de Retorno:
 ]
 ```
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-### Scraping
+## Execucao Scraping
 
 POST /api/v1/scraping/trigger — Dispara scraping (JWT).
 
@@ -439,7 +571,15 @@ Exemplo de Retorno:
 ```
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-### Machine Learning
+## Machine Learning
+
+O modelo é treinado e carregado automaticamente ao iniciar a API.
+Endpoints para features, dados de treino e predição.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## ML Features
+
 GET /api/v1/ml/features — Dados prontos para features de ML.
 
 Exemplo de Retorno:
@@ -471,6 +611,11 @@ Exemplo de Retorno:
     },
 ]
 ```
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## ML Treinamento Dados
+
 GET /api/v1/ml/training-data — Dados para treinamento.
 
 
@@ -535,6 +680,10 @@ Exemplo de Retorno:
     },
 ]
 ```
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## ML Predicoes
 POST /api/v1/ml/predictions — Predição com modelo ML.
 
 Exemplo de Retorno:
@@ -552,33 +701,8 @@ Exemplo de Retorno:
 ```
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## Autenticação JWT
 
-POST /api/v1/auth/login — Login e obtenção de token JWT.
-POST /api/v1/auth/newuser — Criação de novo usuário (JWT).
-POST /api/v1/auth/refresh — Renovação do token de acesso.
 
-Exemplo de login:
-
-```bash
-curl -X POST http://localhost:5000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "1234"}'
-```
-
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-## Scraping
-
-O scraping é disparado manualmente ou automaticamente se o CSV não existir.
-Status do scraping pode ser consultado via endpoint.
-
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-## Machine Learning
-
-O modelo é treinado e carregado automaticamente ao iniciar a API.
-Endpoints para features, dados de treino e predição.
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
